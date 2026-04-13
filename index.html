@@ -3,31 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-    <title>Card Score Tracker</title>
+    <title>Eight Cards Scoreboard</title>
     <link rel="stylesheet" href="style.css">
     <link rel="manifest" href="manifest.json">
 </head>
 <body>
-
     <header>
-        <h1>Scoreboard</h1>
+        <h1>Eight Cards</h1>
         <div class="controls">
             <button onclick="addPlayer()">+ Player</button>
             <button onclick="addRow()">+ Row</button>
-            <button onclick="resetGame()" class="danger">Reset</button>
+            <button onclick="resetGame()" class="btn-danger">Reset</button>
         </div>
     </header>
 
-    <main id="table-container">
-        <table id="scoreTable">
+    <div class="table-wrapper">
+        <table id="board">
             <thead>
-                <tr id="header-row">
-                    </tr>
+                <tr id="player-names"></tr>
+                <tr id="sub-header"></tr>
             </thead>
-            <tbody id="score-body">
-                </tbody>
+            <tbody id="game-body"></tbody>
         </table>
-    </main>
+    </div>
 
     <script src="script.js"></script>
 </body>
