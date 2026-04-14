@@ -1,15 +1,8 @@
 {
+  "short_name": "8Cards",
   "name": "Eight Cards Scoreboard",
-  "short_name": "8 Cards",
   "start_url": "index.html",
   "display": "standalone",
-  "background_color": "#f8f9fa",
-  "theme_color": "#2c3e50",
-  "icons": [
-    {
-      "src": "https://cdn-icons-png.flaticon.com/512/806/806131.png",
-      "sizes": "512x512",
-      "type": "image/png"
-    }
-  ]
+  "theme_color": "#ffffff",
+  "background_color": "#ffffff"
 }

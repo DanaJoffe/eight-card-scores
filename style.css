@@ -1,32 +1,22 @@
-:root {
-    --bg: #f8f9fa;
-    --text: #333;
-    --header-bg: #2c3e50;
-    --border: #dee2e6;
-    --soft-red: #ffcccb;
-    --soft-green: #d1f2eb;
-}
-
 body {
     font-family: sans-serif;
     margin: 0;
-    background: var(--bg);
-    color: var(--text);
+    padding: 20px;
+    background-color: #f4f4f9;
 }
 
 header {
-    background: var(--header-bg);
-    color: white;
-    padding: 1rem;
-    position: sticky;
-    top: 0;
-    z-index: 100;
-    text-align: center;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
 }
 
-.controls { margin-top: 10px; display: flex; justify-content: center; gap: 8px; }
-
-.table-wrapper { overflow-x: auto; }
+.table-container {
+    max-height: 70vh;
+    overflow-y: auto;
+    border: 1px solid #ccc;
+}
 
 table {
     width: 100%;
@@ -34,36 +24,49 @@ table {
     background: white;
 }
 
-thead {
+thead th {
     position: sticky;
-    top: 105px; /* Adjust based on header height */
-    z-index: 90;
-    background: white;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    top: 0;
+    background: #eee;
+    z-index: 10;
+    padding: 10px;
+    border: 1px solid #ddd;
 }
 
-th, td {
-    border: 1px solid var(--border);
-    text-align: center;
-    padding: 8px;
-    min-width: 80px;
-}
+/* Player highlighting */
+.low-score { background-color: #ffcccc !important; }
+.high-score { background-color: #ccffcc !important; }
 
-.player-title { font-weight: bold; }
-.low-score { background-color: var(--soft-red) !important; transition: 0.3s; }
-.high-score { background-color: var(--soft-green) !important; transition: 0.3s; }
-
-.cell-pair { display: flex; gap: 2px; }
-input {
+/* Sub-column layout */
+.cell-wrapper {
+    display: flex;
     width: 100%;
-    border: 1px solid #ccc;
-    padding: 8px 2px;
+}
+
+.bet-input {
+    width: 33.33%;
+    border: none;
+    border-right: 1px solid #ddd;
     text-align: center;
+}
+
+.score-input {
+    width: 66.66%;
+    border: none;
+    padding: 5px;
+}
+
+input, select {
+    outline: none;
     font-size: 1rem;
 }
 
-.name-input { font-weight: bold; border: none; background: transparent; }
-
-button { padding: 6px 12px; border-radius: 4px; border: none; cursor: pointer; }
-.btn-danger { background: #e74c3c; color: white; }
-.btn-remove { font-size: 10px; background: #95a5a6; color: white; margin-top: 4px;}
+#addRowBtn {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    margin-top: 10px;
+    cursor: pointer;
+    background: #e0e0e0;
+    border: 1px dashed #999;
+}
