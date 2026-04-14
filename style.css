@@ -1,72 +1,129 @@
+:root {
+    --bg-color: #f8f9fa;
+    --card-bg: #ffffff;
+    --primary: #3498db;
+    --danger: #ff7675;
+    --success: #55efc4;
+    --text: #2d3436;
+}
+
 body {
-    font-family: sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text);
     margin: 0;
-    padding: 20px;
-    background-color: #f4f4f9;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+}
+
+.app-container {
+    width: 100%;
+    max-width: 600px;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
 }
 
 header {
+    padding: 15px;
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
+    background: #2c3e50;
 }
 
-.table-container {
-    max-height: 70vh;
+.table-wrapper {
+    flex: 1;
+    overflow-x: auto;
     overflow-y: auto;
-    border: 1px solid #ccc;
+    position: relative;
 }
 
 table {
     width: 100%;
     border-collapse: collapse;
-    background: white;
+    table-layout: fixed; /* Ensures column ratios stay fixed */
 }
 
+/* Sticky Player Names */
 thead th {
     position: sticky;
     top: 0;
-    background: #eee;
+    background: #ecf0f1;
     z-index: 10;
-    padding: 10px;
-    border: 1px solid #ddd;
+    padding: 8px;
+    border: 1px solid #dfe6e9;
+    min-width: 100px;
 }
 
-/* Player highlighting */
-.low-score { background-color: #ffcccc !important; }
-.high-score { background-color: #ccffcc !important; }
-
-/* Sub-column layout */
-.cell-wrapper {
+.player-header {
     display: flex;
-    width: 100%;
+    flex-direction: column;
+    gap: 5px;
 }
 
-.bet-input {
+.player-name-input {
+    border: none;
+    background: transparent;
+    font-weight: bold;
+    text-align: center;
+    width: 100%;
+    font-size: 0.9rem;
+}
+
+.remove-btn {
+    color: var(--danger);
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+}
+
+/* Highlight styles */
+.high-score-glow { background-color: #d1f7eccc !important; }
+.low-score-glow { background-color: #ffdce0cc !important; }
+
+/* 1/3 and 2/3 Column Split */
+.cell-container {
+    display: flex;
+    height: 45px;
+    border: 1px solid #dfe6e9;
+}
+
+.bet-select {
     width: 33.33%;
     border: none;
-    border-right: 1px solid #ddd;
+    border-right: 1px solid #dfe6e9;
+    background: #fdfdfd;
     text-align: center;
+    -webkit-appearance: none;
 }
 
 .score-input {
     width: 66.66%;
     border: none;
     padding: 5px;
+    text-align: center;
+    font-size: 1.1rem;
 }
 
-input, select {
-    outline: none;
-    font-size: 1rem;
+/* UI Buttons */
+.btn-primary { background: var(--primary); color: white; border: none; border-radius: 5px; padding: 8px 15px; }
+.btn-secondary { background: #95a5a6; color: white; border: none; border-radius: 5px; padding: 8px 15px; }
+
+.footer-actions {
+    padding: 20px;
+    text-align: center;
+    background: var(--bg-color);
 }
 
-#addRowBtn {
-    display: block;
-    width: 100%;
-    padding: 10px;
-    margin-top: 10px;
-    cursor: pointer;
-    background: #e0e0e0;
-    border: 1px dashed #999;
+.add-row-trigger {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: white;
+    font-size: 30px;
+    border: none;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
 }

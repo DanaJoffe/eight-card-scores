@@ -2,33 +2,34 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Eight Cards Scoreboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Eight Cards Board</title>
     <link rel="stylesheet" href="style.css">
     <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2c3e50">
 </head>
 <body>
-    <header>
-        <h1>Eight Cards Board</h1>
-        <div class="controls">
-            <button id="addPlayerBtn">Add Player</button>
-            <button id="resetBtn">New Game</button>
+    <div class="app-container">
+        <header>
+            <button id="resetBtn" class="btn-secondary">New Game</button>
+            <button id="addPlayerBtn" class="btn-primary">Add Player</button>
+        </header>
+
+        <div class="table-wrapper">
+            <table id="scoreTable">
+                <thead>
+                    <tr id="playerNamesRow">
+                        </tr>
+                </thead>
+                <tbody id="roundsBody">
+                    </tbody>
+            </table>
         </div>
-    </header>
 
-    <div class="table-container">
-        <table id="scoreTable">
-            <thead>
-                <tr id="playerNamesRow">
-                    </tr>
-            </thead>
-            <tbody id="roundsBody">
-                </tbody>
-        </table>
+        <div class="footer-actions">
+            <button id="addRowBtn" class="add-row-trigger">+</button>
+        </div>
     </div>
-
-    <button id="addRowBtn">+</button>
-
     <script src="script.js"></script>
 </body>
 </html>
