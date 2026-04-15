@@ -3,8 +3,7 @@ let state = {
     rounds: []
 };
 
-const roundsBody = document.getElementById('roundsBody');
-const namesRow = document.getElementById('playerNamesRow');
+let activeCell = null;
 
 function init() {
     const urlParams = new URLSearchParams(window.location.search);
@@ -58,55 +57,22 @@ function renderTable() {
 
         round.forEach((cell, pIdx) => {
             const td = document.createElement('td');
-            const prevScore = rIdx > 0 ? state.rounds[rIdx-1][pIdx].score : 0;
-            
-            const canBet = (rIdx === 0) || (state.rounds[rIdx-1][pIdx].score !== null);
-            const betDisabled = !canBet ? 'disabled' : '';
-            const scoreDisabled = cell.bet === null ? 'disabled' : '';
             const isFirst = pIdx === firstBetterIndex ? 'first-better' : '';
-
-			// --- Dynamic Scoring Logic with "More" toggle ---
-			let scoreOptionsHtml = `<option value="">${cell.score}</option>`;
-
-			if (cell.bet !== null) {
-				const winVal = (cell.bet * 4) + 3;
-				const maxOutSteps = Math.max(cell.bet, 8 - cell.bet);
-				
-				// Check if the user has already requested "more" for this specific cell
-				// We can store this in a temporary session variable or check a 'data' attribute
-				const showAll = cell.showFullMenu === true;
-
-				// "In" Option
-				scoreOptionsHtml += `<option class="opt-win" value="${prevScore + winVal}">+${winVal} (IN)</option>`;
-
-				// "Out" Options
-				const limit = showAll ? maxOutSteps : Math.min(2, maxOutSteps);
-				
-				for (let step = 1; step <= limit; step++) {
-					const penalty = step * 2;
-					scoreOptionsHtml += `<option class="opt-loss" value="${prevScore - penalty}">-${penalty} (OUT)</option>`;
-				}
-
-				// Add "More" option if we are currently limiting and there's more to show
-				if (!showAll && maxOutSteps > 2) {
-					scoreOptionsHtml += `<option value="toggle-more">More...</option>`;
-				}
-			}
+            const scoreLocked = cell.bet === null;
+            const canBet = (rIdx === 0) || (state.rounds[rIdx-1][pIdx].bet !== null);
 
             td.innerHTML = `
                 <div class="cell-box ${isFirst}">
                     <div class="bet-part">
-                        <select ${betDisabled} onchange="updateBet(${rIdx}, ${pIdx}, this.value)">
+                        <select ${!canBet ? 'disabled' : ''} onchange="updateBet(${rIdx}, ${pIdx}, this.value)">
                             <option value="" ${cell.bet === null ? 'selected' : ''}>-</option>
                             ${[0,1,2,3,4,5,6,7,8].map(v => 
                                 `<option value="${v}" ${v === cell.bet ? 'selected' : ''}>${v}</option>`
                             ).join('')}
                         </select>
                     </div>
-                    <div class="score-part">
-                        <select ${scoreDisabled} onchange="updateScore(${rIdx}, ${pIdx}, this.value)">
-                            ${scoreOptionsHtml}
-                        </select>
+                    <div class="score-part ${scoreLocked ? 'locked' : ''}" onclick="openScoreOverlay(${rIdx}, ${pIdx})">
+                        ${cell.score}
                     </div>
                 </div>
             `;
@@ -116,22 +82,73 @@ function renderTable() {
     });
 }
 
-function updateBet(rIdx, pIdx, val) {
-    if (val === "") {
-        state.rounds[rIdx][pIdx].bet = null;
-        render();
-        return;
+function openScoreOverlay(rIdx, pIdx, showAll = false) {
+    const cell = state.rounds[rIdx][pIdx];
+    if (cell.bet === null) return;
+
+    activeCell = { rIdx, pIdx };
+    const prevScore = rIdx > 0 ? state.rounds[rIdx-1][pIdx].score : 0;
+    const winVal = (cell.bet * 4) + 3;
+    const maxOutSteps = Math.max(cell.bet, 8 - cell.bet);
+    
+    const overlay = document.getElementById('scoreOverlay');
+    const container = document.getElementById('overlayOptions');
+    container.innerHTML = '';
+
+    // IN Option
+    const inBtn = createOptionBtn(`+${winVal} (IN)`, () => finalizeScore(prevScore + winVal), 'btn-in');
+    container.appendChild(inBtn);
+
+    // OUT Options
+    const limit = showAll ? maxOutSteps : Math.min(2, maxOutSteps);
+    for (let i = 1; i <= limit; i++) {
+        const penalty = i * 2;
+        container.appendChild(createOptionBtn(`-${penalty} (OUT)`, () => finalizeScore(prevScore - penalty), 'btn-out'));
     }
+
+    // MORE Option
+    if (!showAll && maxOutSteps > 2) {
+        container.appendChild(createOptionBtn('More...', (e) => {
+            e.stopPropagation();
+            openScoreOverlay(rIdx, pIdx, true);
+        }, 'btn-more'));
+    }
+
+    overlay.classList.remove('overlay-hidden');
+}
+
+function createOptionBtn(text, action, className) {
+    const btn = document.createElement('button');
+    btn.className = `score-option-btn ${className}`;
+    btn.innerText = text;
+    btn.onclick = action;
+    return btn;
+}
+
+function finalizeScore(val) {
+    state.rounds[activeCell.rIdx][activeCell.pIdx].score = val;
+    closeOverlay();
+    render();
+}
+
+function closeOverlay() {
+    document.getElementById('scoreOverlay').classList.add('overlay-hidden');
+    activeCell = null;
+}
+
+function updateBet(rIdx, pIdx, val) {
+    if (val === "") { state.rounds[rIdx][pIdx].bet = null; render(); return; }
+    
     const num = parseInt(val);
     const roundData = state.rounds[rIdx];
     const oldBet = roundData[pIdx].bet;
     roundData[pIdx].bet = num;
 
-    const playersWhoHaveBet = roundData.filter(p => p.bet !== null).length;
-    if (playersWhoHaveBet === state.players.length) {
+    const betCount = roundData.filter(p => p.bet !== null).length;
+    if (betCount === state.players.length) {
         const sum = roundData.reduce((acc, c) => acc + c.bet, 0);
         if (sum === 8) {
-            alert("Guardrail: The last player's bet cannot result in a total sum of 8!");
+            alert("Guardrail: Sum cannot be 8 for the last better!");
             roundData[pIdx].bet = oldBet;
             render();
             return;
@@ -140,83 +157,34 @@ function updateBet(rIdx, pIdx, val) {
     render();
 }
 
-function updateScore(rIdx, pIdx, val) {
-    if (val === "") return;
-
-    if (val === "toggle-more") {
-        // Set a temporary flag for this specific cell
-        state.rounds[rIdx][pIdx].showFullMenu = true;
-        render(); // Re-render the table to show the full list
-        
-        // Optional: on some Androids you can try to focus the element to open it again
-        // document.querySelector(`#score-select-${rIdx}-${pIdx}`).focus(); 
-        return;
-    }
-
-    // Normal score update
-    state.rounds[rIdx][pIdx].score = parseInt(val);
-    // Reset the "more" flag so it collapses for next time if desired
-    delete state.rounds[rIdx][pIdx].showFullMenu; 
-    render();
-}
-
-function removePlayer(i) {
-    if (confirm("Are you sure?")) {
-        state.players.splice(i, 1);
-        state.rounds.forEach(r => r.splice(i, 1));
-        render();
-    }
-}
-
-function updatePlayerName(i, val) {
-    state.players[i] = val;
-    save();
-}
-
 function updateHighlights() {
-    namesRow.querySelectorAll('th').forEach(th => th.classList.remove('high-score', 'low-score'));
+    const headers = namesRow.querySelectorAll('th');
+    headers.forEach(th => th.classList.remove('high-score', 'low-score'));
+    
     let activeRIdx = -1;
     for (let i = state.rounds.length - 1; i >= 0; i--) {
-        if (state.rounds[i].some(c => c.score !== 0)) {
-            activeRIdx = i; break;
-        }
+        if (state.rounds[i].some(c => c.score !== 0)) { activeRIdx = i; break; }
     }
+    
     if (activeRIdx === -1) return;
-    const currentScores = state.rounds[activeRIdx].map(c => c.score);
-    const max = Math.max(...currentScores);
-    const min = Math.min(...currentScores);
+    const scores = state.rounds[activeRIdx].map(c => c.score);
+    const max = Math.max(...scores);
+    const min = Math.min(...scores);
     if (max === min) return;
-    currentScores.forEach((s, i) => {
+
+    scores.forEach((s, i) => {
         if (s === max) namesRow.cells[i].classList.add('high-score');
-        if (s === min) namesRow.cells[i].classList.add('low-score');
+        else if (s === min) namesRow.cells[i].classList.add('low-score');
     });
 }
 
-function save() {
-    localStorage.setItem('eightCardsState', JSON.stringify(state));
-}
-
-document.getElementById('shareBtn').onclick = () => {
-    const data = btoa(JSON.stringify(state));
-    const url = `${window.location.origin}${window.location.pathname}?data=${data}`;
-    navigator.clipboard.writeText(url).then(() => alert("URL Copied!"));
-};
-
-document.getElementById('addPlayerBtn').onclick = () => {
-    if (state.players.length < 6) {
-        state.players.push(`P${state.players.length + 1}`);
-        state.rounds.forEach(r => r.push({ bet: null, score: 0 }));
-        render();
-    }
-};
+function save() { localStorage.setItem('eightCardsState', JSON.stringify(state)); }
+function removePlayer(i) { if(confirm("Remove player?")) { state.players.splice(i,1); state.rounds.forEach(r => r.splice(i,1)); render(); } }
+function updatePlayerName(i, v) { state.players[i] = v; save(); }
 
 document.getElementById('addRowBtn').onclick = () => addNewRoundData(true);
-
-document.getElementById('resetBtn').onclick = () => {
-    if (confirm("New game?")) {
-        localStorage.removeItem('eightCardsState');
-        window.location.href = window.location.pathname;
-    }
-};
+document.getElementById('addPlayerBtn').onclick = () => { if(state.players.length < 6) { state.players.push(`P${state.players.length+1}`); state.rounds.forEach(r => r.push({bet:null, score:0})); render(); }};
+document.getElementById('resetBtn').onclick = () => { if(confirm("Reset game?")) { localStorage.removeItem('eightCardsState'); window.location.href = window.location.pathname; }};
+document.getElementById('shareBtn').onclick = () => { const d = btoa(JSON.stringify(state)); navigator.clipboard.writeText(window.location.origin + window.location.pathname + '?data=' + d).then(() => alert("Link Copied!")); };
 
 init();
