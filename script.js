@@ -32,6 +32,7 @@ function addNewRoundData(shouldRender = true) {
 function render() {
     renderHeaders();
     renderTable();
+    updateHighlights(); // Restored logic
     save();
 }
 
@@ -53,8 +54,6 @@ function renderTable() {
     roundsBody.innerHTML = '';
     state.rounds.forEach((round, rIdx) => {
         const tr = document.createElement('tr');
-        
-        // Circular turn logic: Round 0 -> Player 0, Round 1 -> Player 1, etc.
         const firstBetterIndex = rIdx % state.players.length;
 
         round.forEach((cell, pIdx) => {
@@ -65,8 +64,6 @@ function renderTable() {
             const canBet = (rIdx === 0) || (state.rounds[rIdx-1][pIdx].score !== null);
             const betDisabled = !canBet ? 'disabled' : '';
             const scoreDisabled = cell.bet === null ? 'disabled' : '';
-
-            // Visual indicator for first better
             const isFirst = pIdx === firstBetterIndex ? 'first-better' : '';
 
             td.innerHTML = `
@@ -99,22 +96,47 @@ function renderTable() {
     });
 }
 
+function updateHighlights() {
+    // Reset classes on headers
+    namesRow.querySelectorAll('th').forEach(th => th.classList.remove('high-score', 'low-score'));
+    
+    // Find last round where at least one score has been set
+    let activeRIdx = -1;
+    for (let i = state.rounds.length - 1; i >= 0; i--) {
+        if (state.rounds[i].some(c => c.score !== 0)) {
+            activeRIdx = i; 
+            break;
+        }
+    }
+    
+    if (activeRIdx === -1) return;
+
+    const currentScores = state.rounds[activeRIdx].map(c => c.score);
+    const max = Math.max(...currentScores);
+    const min = Math.min(...currentScores);
+
+    // Only highlight if there is a difference between players
+    if (max === min) return;
+
+    currentScores.forEach((s, i) => {
+        if (s === max) namesRow.cells[i].classList.add('high-score');
+        if (s === min) namesRow.cells[i].classList.add('low-score');
+    });
+}
+
 function updateBet(rIdx, pIdx, val) {
     if (val === "") {
         state.rounds[rIdx][pIdx].bet = null;
         render();
         return;
     }
-
     const num = parseInt(val);
     const roundData = state.rounds[rIdx];
     const oldBet = roundData[pIdx].bet;
     roundData[pIdx].bet = num;
 
     const playersWhoHaveBet = roundData.filter(p => p.bet !== null).length;
-    const isLastPlayer = playersWhoHaveBet === state.players.length;
-
-    if (isLastPlayer) {
+    if (playersWhoHaveBet === state.players.length) {
         const sum = roundData.reduce((acc, c) => acc + c.bet, 0);
         if (sum === 8) {
             alert("Guardrail: The last player's bet cannot result in a total sum of 8!");

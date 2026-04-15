@@ -4,7 +4,9 @@
     --win: #27ae60;
     --loss: #d63031;
     --border: #dfe6e9;
-    --accent: #3498db; /* Blue for the first better */
+    --accent: #3498db; 
+    --soft-green: #c3e6cb;
+    --soft-red: #f5c6cb;
 }
 
 body {
@@ -56,7 +58,12 @@ thead th {
     border: 1px solid var(--border);
     padding: 5px;
     font-size: 0.8rem;
+    transition: background 0.3s;
 }
+
+/* Winner/Loser Highlights for Player Names */
+.high-score { background-color: var(--soft-green) !important; color: #155724; }
+.low-score { background-color: var(--soft-red) !important; color: #721c24; }
 
 .player-name-input {
     width: 90%;
@@ -65,6 +72,7 @@ thead th {
     text-align: center;
     font-weight: bold;
     font-size: 0.85rem;
+    color: inherit;
 }
 
 .remove-p {
@@ -75,12 +83,12 @@ thead th {
     display: flex;
     height: 45px;
     border-bottom: 1px solid var(--border);
-    transition: background 0.2s;
+    border-left: 4px solid transparent; 
 }
 
-/* Marker for the player who bets first */
+/* Marker for first better */
 .first-better {
-    background: #ebf5fb; /* Light blue background */
+    background: #ebf5fb; 
     border-left: 4px solid var(--accent) !important;
 }
 
