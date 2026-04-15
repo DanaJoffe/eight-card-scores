@@ -4,6 +4,7 @@
     --win: #27ae60;
     --loss: #d63031;
     --border: #dfe6e9;
+    --accent: #3498db; /* Blue for the first better */
 }
 
 body {
@@ -74,6 +75,13 @@ thead th {
     display: flex;
     height: 45px;
     border-bottom: 1px solid var(--border);
+    transition: background 0.2s;
+}
+
+/* Marker for the player who bets first */
+.first-better {
+    background: #ebf5fb; /* Light blue background */
+    border-left: 4px solid var(--accent) !important;
 }
 
 .bet-part {
@@ -89,21 +97,17 @@ select {
     width: 100%;
     height: 100%;
     border: none;
-    background: white;
+    background: transparent;
     font-size: 0.9rem;
     text-align: center;
 }
 
 select:disabled {
-    background: #eee;
-    color: #999;
+    color: #ccc;
 }
 
 .opt-win { color: var(--win); font-weight: bold; }
 .opt-loss { color: var(--loss); }
-
-.high-score { background-color: #c3e6cb !important; }
-.low-score { background-color: #f5c6cb !important; }
 
 .row-trigger-zone {
     position: sticky;
@@ -127,5 +131,5 @@ select:disabled {
     box-shadow: 0 4px 12px rgba(0,0,0,0.3);
 }
 
-.primary-btn { background: var(--win); border: none; color: white; padding: 5px 15px; border-radius: 4px; }
+.primary-btn { background: var(--accent); border: none; color: white; padding: 5px 15px; border-radius: 4px; }
 .secondary-btn { background: #636e72; border: none; color: white; padding: 5px 15px; border-radius: 4px; }

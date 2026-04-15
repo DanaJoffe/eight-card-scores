@@ -32,7 +32,6 @@ function addNewRoundData(shouldRender = true) {
 function render() {
     renderHeaders();
     renderTable();
-    updateHighlights();
     save();
 }
 
@@ -54,21 +53,24 @@ function renderTable() {
     roundsBody.innerHTML = '';
     state.rounds.forEach((round, rIdx) => {
         const tr = document.createElement('tr');
+        
+        // Circular turn logic: Round 0 -> Player 0, Round 1 -> Player 1, etc.
+        const firstBetterIndex = rIdx % state.players.length;
+
         round.forEach((cell, pIdx) => {
             const td = document.createElement('td');
             const prevScore = rIdx > 0 ? state.rounds[rIdx-1][pIdx].score : 0;
             const winVal = (cell.bet * 4) + 3;
 
-            // --- Logic: Can only bet if player has score from previous round ---
-            // (Always allowed in Round 0)
             const canBet = (rIdx === 0) || (state.rounds[rIdx-1][pIdx].score !== null);
             const betDisabled = !canBet ? 'disabled' : '';
-
-            // --- Logic: Only allow score if bet is placed ---
             const scoreDisabled = cell.bet === null ? 'disabled' : '';
 
+            // Visual indicator for first better
+            const isFirst = pIdx === firstBetterIndex ? 'first-better' : '';
+
             td.innerHTML = `
-                <div class="cell-box">
+                <div class="cell-box ${isFirst}">
                     <div class="bet-part">
                         <select ${betDisabled} onchange="updateBet(${rIdx}, ${pIdx}, this.value)">
                             <option value="" ${cell.bet === null ? 'selected' : ''}>-</option>
@@ -106,12 +108,9 @@ function updateBet(rIdx, pIdx, val) {
 
     const num = parseInt(val);
     const roundData = state.rounds[rIdx];
-    
-    // Temporarily set the bet to check the rule
     const oldBet = roundData[pIdx].bet;
     roundData[pIdx].bet = num;
 
-    // --- Logic: Sum cannot be 8 only if this is the LAST player to bet in this round ---
     const playersWhoHaveBet = roundData.filter(p => p.bet !== null).length;
     const isLastPlayer = playersWhoHaveBet === state.players.length;
 
@@ -119,12 +118,11 @@ function updateBet(rIdx, pIdx, val) {
         const sum = roundData.reduce((acc, c) => acc + c.bet, 0);
         if (sum === 8) {
             alert("Guardrail: The last player's bet cannot result in a total sum of 8!");
-            roundData[pIdx].bet = oldBet; // Revert
+            roundData[pIdx].bet = oldBet;
             render();
             return;
         }
     }
-
     render();
 }
 
@@ -135,7 +133,7 @@ function updateScore(rIdx, pIdx, val) {
 }
 
 function removePlayer(i) {
-    if (confirm("Are you sure? This removes the player's history.")) {
+    if (confirm("Are you sure?")) {
         state.players.splice(i, 1);
         state.rounds.forEach(r => r.splice(i, 1));
         render();
@@ -145,27 +143,6 @@ function removePlayer(i) {
 function updatePlayerName(i, val) {
     state.players[i] = val;
     save();
-}
-
-function updateHighlights() {
-    namesRow.querySelectorAll('th').forEach(th => th.className = '');
-    let activeRIdx = -1;
-    for (let i = state.rounds.length - 1; i >= 0; i--) {
-        if (state.rounds[i].some(c => c.score !== 0)) {
-            activeRIdx = i; break;
-        }
-    }
-    if (activeRIdx === -1) return;
-
-    const currentScores = state.rounds[activeRIdx].map(c => c.score);
-    const max = Math.max(...currentScores);
-    const min = Math.min(...currentScores);
-
-    if (max === min) return;
-    currentScores.forEach((s, i) => {
-        if (s === max) namesRow.cells[i].classList.add('high-score');
-        if (s === min) namesRow.cells[i].classList.add('low-score');
-    });
 }
 
 function save() {
@@ -189,7 +166,7 @@ document.getElementById('addPlayerBtn').onclick = () => {
 document.getElementById('addRowBtn').onclick = () => addNewRoundData(true);
 
 document.getElementById('resetBtn').onclick = () => {
-    if (confirm("New game? All current data will be erased.")) {
+    if (confirm("New game?")) {
         localStorage.removeItem('eightCardsState');
         window.location.href = window.location.pathname;
     }
