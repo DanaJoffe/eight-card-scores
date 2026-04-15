@@ -1,126 +1,191 @@
-let players = ['Player 1', 'Player 2', 'Player 3', 'Player 4'];
+let state = {
+    players: ["Player 1", "Player 2"],
+    rounds: []
+};
+
 const roundsBody = document.getElementById('roundsBody');
 const namesRow = document.getElementById('playerNamesRow');
 
+// --- Initialization ---
+
 function init() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const sharedData = urlParams.get('data');
+
+    if (sharedData) {
+        try {
+            state = JSON.parse(atob(sharedData));
+        } catch (e) {
+            console.error("Failed to parse shared data");
+        }
+    } else {
+        const saved = localStorage.getItem('eightCardsState');
+        if (saved) state = JSON.parse(saved);
+    }
+
+    if (state.rounds.length === 0) {
+        for(let i=0; i<5; i++) createNewRoundData();
+    }
+    renderAll();
+}
+
+function createNewRoundData() {
+    const round = state.players.map(() => ({ bet: 0, score: 0 }));
+    state.rounds.push(round);
+}
+
+// --- Rendering ---
+
+function renderAll() {
     renderHeaders();
-    roundsBody.innerHTML = '';
-    for (let i = 0; i < 5; i++) addRow();
+    renderRows();
+    updateHighlights();
+    save();
 }
 
 function renderHeaders() {
     namesRow.innerHTML = '';
-    players.forEach((name, index) => {
+    state.players.forEach((name, i) => {
         const th = document.createElement('th');
         th.innerHTML = `
-            <div class="player-header">
-                <input type="text" value="${name}" class="player-name-input" onchange="players[${index}]=this.value">
-                <button class="remove-btn" onclick="removePlayer(${index})">×</button>
+            <div class="player-header-ui">
+                <input type="text" class="player-name-input" value="${name}" onchange="updatePlayerName(${i}, this.value)">
+                <button class="remove-p-btn" onclick="removePlayer(${i})">×</button>
             </div>
         `;
         namesRow.appendChild(th);
     });
 }
 
-function addRow() {
-    const tr = document.createElement('tr');
-    players.forEach((_, pIndex) => {
-        const td = document.createElement('td');
-        td.innerHTML = `
-            <div class="cell-container">
-                <select class="bet-select" onchange="checkSumRule(this)">
-                    ${[0,1,2,3,4,5,6,7,8].map(v => `<option value="${v}">${v}</option>`).join('')}
-                </select>
-                <input type="number" class="score-input" onchange="validateScore(this, ${pIndex})">
-            </div>
-        `;
-        tr.appendChild(td);
+function renderRows() {
+    roundsBody.innerHTML = '';
+    state.rounds.forEach((round, rIdx) => {
+        const tr = document.createElement('tr');
+        round.forEach((cell, pIdx) => {
+            const td = document.createElement('td');
+            const winVal = (cell.bet * 4) + 3;
+            const prevScore = rIdx > 0 ? state.rounds[rIdx-1][pIdx].score : 0;
+
+            td.innerHTML = `
+                <div class="cell-split">
+                    <div class="bet-col">
+                        <select onchange="updateBet(${rIdx}, ${pIdx}, this.value)">
+                            ${[0,1,2,3,4,5,6,7,8].map(v => `<option value="${v}" ${v==cell.bet?'selected':''}>${v}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div class="score-col">
+                        <select onchange="updateScore(${rIdx}, ${pIdx}, this.value)">
+                            <option value="">${cell.score}</option>
+                            <option class="win" value="${prevScore + winVal}">+${winVal}</option>
+                            <option class="loss" value="${prevScore - 2}">-2</option>
+                            <option class="loss" value="${prevScore - 4}">-4</option>
+                            <option value="more">more...</option>
+                        </select>
+                    </div>
+                </div>
+            `;
+            tr.appendChild(td);
+        });
+        roundsBody.appendChild(tr);
     });
-    roundsBody.appendChild(tr);
 }
 
-function removePlayer(index) {
-    if (confirm(`Are you sure you want to remove ${players[index]}?`)) {
-        players.splice(index, 1);
-        renderHeaders();
-        // Remove the corresponding cells from every row
-        Array.from(roundsBody.rows).forEach(row => row.deleteCell(index));
-        updateHighlights();
-    }
-}
+// --- Logic ---
 
-function checkSumRule(select) {
-    const row = select.closest('tr');
-    const bets = Array.from(row.querySelectorAll('.bet-select')).map(s => parseInt(s.value));
-    const sum = bets.reduce((a, b) => a + b, 0);
-    if (sum === 8) {
-        alert("🚨 Guardrail: The sum of bets in a round cannot be exactly 8!");
-        select.value = 0;
-    }
-}
-
-function validateScore(input, pIndex) {
-    const row = input.closest('tr');
-    const rowIndex = Array.from(roundsBody.rows).indexOf(row);
-    const bet = parseInt(row.querySelectorAll('.bet-select')[pIndex].value);
-    const score = parseInt(input.value);
-
-    // Get previous score
-    let prevScore = 0;
-    if (rowIndex > 0) {
-        const prevInput = roundsBody.rows[rowIndex - 1].querySelectorAll('.score-input')[pIndex];
-        prevScore = parseInt(prevInput.value) || 0;
-    }
-
-    const winScore = (bet * 4) + 3;
-    const diff = prevScore - score;
+function updateBet(rIdx, pIdx, val) {
+    const newVal = parseInt(val);
+    state.rounds[rIdx][pIdx].bet = newVal;
     
-    const isValidWin = (score === winScore);
-    const isValidLoss = (score < prevScore && diff % 2 === 0);
-
-    if (!isValidWin && !isValidLoss && input.value !== "") {
-        alert(`❌ Invalid Score!\nMust be exactly ${winScore} (Bet*4+3) OR lower than previous (${prevScore}) by steps of 2.`);
-        input.value = "";
+    // Guardrail: Sum not equal to 8
+    const sum = state.rounds[rIdx].reduce((acc, curr) => acc + curr.bet, 0);
+    if (sum === 8) {
+        alert("Rule Broken: Sum of bets cannot be 8!");
+        state.rounds[rIdx][pIdx].bet = 0;
     }
-    updateHighlights();
+    renderAll();
+}
+
+function updateScore(rIdx, pIdx, val) {
+    if (val === "more") {
+        const prevScore = rIdx > 0 ? state.rounds[rIdx-1][pIdx].score : 0;
+        let extra = prompt("Choose loss: -6, -8, -10, -12", "-6");
+        if (["-6", "-8", "-10", "-12"].includes(extra)) {
+            state.rounds[rIdx][pIdx].score = prevScore + parseInt(extra);
+        }
+    } else if (val !== "") {
+        state.rounds[rIdx][pIdx].score = parseInt(val);
+    }
+    renderAll();
+}
+
+function removePlayer(i) {
+    if (confirm("Are you sure?")) {
+        state.players.splice(i, 1);
+        state.rounds.forEach(r => r.splice(i, 1));
+        renderAll();
+    }
+}
+
+function updatePlayerName(i, val) {
+    state.players[i] = val;
+    save();
 }
 
 function updateHighlights() {
-    // Reset highlights
-    Array.from(namesRow.cells).forEach(cell => cell.className = '');
-
-    const rows = Array.from(roundsBody.rows);
-    let lastRowWithData = null;
-
-    // Find latest row where at least one score is entered
-    for (let i = rows.length - 1; i >= 0; i--) {
-        const rowScores = Array.from(rows[i].querySelectorAll('.score-input')).map(inp => inp.value);
-        if (rowScores.some(s => s !== "")) {
-            lastRowWithData = rows[i];
+    document.querySelectorAll('th').forEach(th => th.className = '');
+    
+    // Find last round with any scores
+    let lastActiveIdx = -1;
+    for(let i = state.rounds.length -1; i >= 0; i--) {
+        if(state.rounds[i].some(c => c.score !== 0)) {
+            lastActiveIdx = i;
             break;
         }
     }
 
-    if (!lastRowWithData) return;
+    if (lastActiveIdx === -1) return;
 
-    const scores = Array.from(lastRowWithData.querySelectorAll('.score-input')).map(inp => parseInt(inp.value) || 0);
-    const max = Math.max(...scores);
+    const scores = state.rounds[lastActiveIdx].map(c => c.score);
     const min = Math.min(...scores);
+    const max = Math.max(...scores);
 
-    scores.forEach((s, i) => {
-        if (s === max) namesRow.cells[i].classList.add('high-score-glow');
-        if (s === min) namesRow.cells[i].classList.add('low-score-glow');
+    state.players.forEach((_, i) => {
+        if (scores[i] === max && max !== min) namesRow.cells[i].classList.add('high-score');
+        if (scores[i] === min && max !== min) namesRow.cells[i].classList.add('low-score');
     });
 }
 
+// --- Persistence ---
+
+function save() {
+    localStorage.setItem('eightCardsState', JSON.stringify(state));
+}
+
+document.getElementById('shareBtn').onclick = () => {
+    const data = btoa(JSON.stringify(state));
+    const url = window.location.origin + window.location.pathname + "?data=" + data;
+    navigator.clipboard.writeText(url);
+    alert("Shareable URL copied to clipboard!");
+};
+
 document.getElementById('addPlayerBtn').onclick = () => {
-    if (players.length < 6) {
-        players.push(`Player ${players.length + 1}`);
-        init();
+    if (state.players.length < 6) {
+        state.players.push("New Player");
+        state.rounds.forEach(r => r.push({ bet: 0, score: 0 }));
+        renderAll();
     }
 };
 
-document.getElementById('addRowBtn').onclick = addRow;
-document.getElementById('resetBtn').onclick = () => { if(confirm("Start a new game?")) init(); };
+document.getElementById('addRowBtn').onclick = () => {
+    createNewRoundData();
+    renderAll();
+};
+
+document.getElementById('resetBtn').onclick = () => {
+    if (confirm("Reset new game?")) {
+        localStorage.removeItem('eightCardsState');
+        location.href = window.location.pathname; // Clear URL params too
+    }
+};
 
 init();

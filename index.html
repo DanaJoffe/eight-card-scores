@@ -3,31 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Eight Cards Board</title>
+    <title>8-Cards Board</title>
     <link rel="stylesheet" href="style.css">
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#2c3e50">
 </head>
 <body>
     <div class="app-container">
         <header>
-            <button id="resetBtn" class="btn-secondary">New Game</button>
-            <button id="addPlayerBtn" class="btn-primary">Add Player</button>
+            <div class="top-bar">
+                <button id="resetBtn" class="btn-text">New Game</button>
+                <button id="shareBtn" class="btn-primary">Share Scoreboard</button>
+            </div>
+            <div class="player-controls">
+                <button id="addPlayerBtn">+ Player</button>
+            </div>
         </header>
 
-        <div class="table-wrapper">
+        <div class="table-scroll-container">
             <table id="scoreTable">
                 <thead>
-                    <tr id="playerNamesRow">
-                        </tr>
+                    <tr id="playerNamesRow"></tr>
                 </thead>
-                <tbody id="roundsBody">
-                    </tbody>
+                <tbody id="roundsBody"></tbody>
             </table>
         </div>
 
-        <div class="footer-actions">
-            <button id="addRowBtn" class="add-row-trigger">+</button>
+        <div class="footer">
+            <button id="addRowBtn" class="add-row-btn">+</button>
         </div>
     </div>
     <script src="script.js"></script>

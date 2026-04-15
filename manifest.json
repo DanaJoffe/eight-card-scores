@@ -1,7 +1,7 @@
 {
-  "name": "Eight Cards Scoreboard",
+  "name": "8-Cards Scoreboard",
   "short_name": "8Cards",
-  "start_url": "./index.html",
+  "start_url": "index.html",
   "display": "standalone",
   "background_color": "#2c3e50",
   "theme_color": "#2c3e50",
