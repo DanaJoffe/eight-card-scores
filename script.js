@@ -1,44 +1,38 @@
 let state = {
-    players: ["Player 1", "Player 2"],
+    players: ["Player 1", "Player 2", "Player 3", "Player 4"],
     rounds: []
 };
 
 const roundsBody = document.getElementById('roundsBody');
 const namesRow = document.getElementById('playerNamesRow');
 
-// --- Initialization ---
-
 function init() {
     const urlParams = new URLSearchParams(window.location.search);
     const sharedData = urlParams.get('data');
 
     if (sharedData) {
-        try {
-            state = JSON.parse(atob(sharedData));
-        } catch (e) {
-            console.error("Failed to parse shared data");
-        }
+        try { state = JSON.parse(atob(sharedData)); } catch (e) {}
     } else {
         const saved = localStorage.getItem('eightCardsState');
         if (saved) state = JSON.parse(saved);
     }
 
+    // Default 5 rounds if totally new
     if (state.rounds.length === 0) {
-        for(let i=0; i<5; i++) createNewRoundData();
+        for(let i=0; i<5; i++) addNewRoundData(false);
     }
-    renderAll();
+    render();
 }
 
-function createNewRoundData() {
-    const round = state.players.map(() => ({ bet: 0, score: 0 }));
-    state.rounds.push(round);
+function addNewRoundData(shouldRender = true) {
+    const newRound = state.players.map(() => ({ bet: null, score: 0, hasBet: false }));
+    state.rounds.push(newRound);
+    if (shouldRender) render();
 }
 
-// --- Rendering ---
-
-function renderAll() {
+function render() {
     renderHeaders();
-    renderRows();
+    renderTable();
     updateHighlights();
     save();
 }
@@ -48,38 +42,47 @@ function renderHeaders() {
     state.players.forEach((name, i) => {
         const th = document.createElement('th');
         th.innerHTML = `
-            <div class="player-header-ui">
-                <input type="text" class="player-name-input" value="${name}" onchange="updatePlayerName(${i}, this.value)">
-                <button class="remove-p-btn" onclick="removePlayer(${i})">×</button>
+            <div class="player-header">
+                <input class="player-name-input" value="${name}" onchange="updatePlayerName(${i}, this.value)">
+                <button class="remove-p" onclick="removePlayer(${i})">×</button>
             </div>
         `;
         namesRow.appendChild(th);
     });
 }
 
-function renderRows() {
+function renderTable() {
     roundsBody.innerHTML = '';
     state.rounds.forEach((round, rIdx) => {
         const tr = document.createElement('tr');
         round.forEach((cell, pIdx) => {
             const td = document.createElement('td');
-            const winVal = (cell.bet * 4) + 3;
             const prevScore = rIdx > 0 ? state.rounds[rIdx-1][pIdx].score : 0;
+            const winVal = (cell.bet * 4) + 3;
+
+            // Conditional Logic: Only allow score if bet is placed
+            const scoreDisabled = cell.bet === null ? 'disabled' : '';
 
             td.innerHTML = `
-                <div class="cell-split">
-                    <div class="bet-col">
+                <div class="cell-box">
+                    <div class="bet-part">
                         <select onchange="updateBet(${rIdx}, ${pIdx}, this.value)">
-                            ${[0,1,2,3,4,5,6,7,8].map(v => `<option value="${v}" ${v==cell.bet?'selected':''}>${v}</option>`).join('')}
+                            <option value="" ${cell.bet === null ? 'selected' : ''}>-</option>
+                            ${[0,1,2,3,4,5,6,7,8].map(v => 
+                                `<option value="${v}" ${v === cell.bet ? 'selected' : ''}>${v}</option>`
+                            ).join('')}
                         </select>
                     </div>
-                    <div class="score-col">
-                        <select onchange="updateScore(${rIdx}, ${pIdx}, this.value)">
+                    <div class="score-part">
+                        <select ${scoreDisabled} onchange="updateScore(${rIdx}, ${pIdx}, this.value)">
                             <option value="">${cell.score}</option>
-                            <option class="win" value="${prevScore + winVal}">+${winVal}</option>
-                            <option class="loss" value="${prevScore - 2}">-2</option>
-                            <option class="loss" value="${prevScore - 4}">-4</option>
-                            <option value="more">more...</option>
+                            <option class="opt-win" value="${prevScore + winVal}">+${winVal}</option>
+                            <option class="opt-loss" value="${prevScore - 2}">-2</option>
+                            <option class="opt-loss" value="${prevScore - 4}">-4</option>
+                            <option class="opt-loss" value="${prevScore - 6}">-6</option>
+                            <option class="opt-loss" value="${prevScore - 8}">-8</option>
+                            <option class="opt-loss" value="${prevScore - 10}">-10</option>
+                            <option class="opt-loss" value="${prevScore - 12}">-12</option>
                         </select>
                     </div>
                 </div>
@@ -90,39 +93,31 @@ function renderRows() {
     });
 }
 
-// --- Logic ---
-
 function updateBet(rIdx, pIdx, val) {
-    const newVal = parseInt(val);
-    state.rounds[rIdx][pIdx].bet = newVal;
-    
-    // Guardrail: Sum not equal to 8
-    const sum = state.rounds[rIdx].reduce((acc, curr) => acc + curr.bet, 0);
+    if (val === "") return;
+    const num = parseInt(val);
+    state.rounds[rIdx][pIdx].bet = num;
+
+    // Rule: Sum cannot be 8
+    const sum = state.rounds[rIdx].reduce((acc, c) => acc + (c.bet || 0), 0);
     if (sum === 8) {
-        alert("Rule Broken: Sum of bets cannot be 8!");
-        state.rounds[rIdx][pIdx].bet = 0;
+        alert("Rule Broken: Sum of bets across players cannot be 8.");
+        state.rounds[rIdx][pIdx].bet = null;
     }
-    renderAll();
+    render();
 }
 
 function updateScore(rIdx, pIdx, val) {
-    if (val === "more") {
-        const prevScore = rIdx > 0 ? state.rounds[rIdx-1][pIdx].score : 0;
-        let extra = prompt("Choose loss: -6, -8, -10, -12", "-6");
-        if (["-6", "-8", "-10", "-12"].includes(extra)) {
-            state.rounds[rIdx][pIdx].score = prevScore + parseInt(extra);
-        }
-    } else if (val !== "") {
-        state.rounds[rIdx][pIdx].score = parseInt(val);
-    }
-    renderAll();
+    if (val === "") return;
+    state.rounds[rIdx][pIdx].score = parseInt(val);
+    render();
 }
 
 function removePlayer(i) {
-    if (confirm("Are you sure?")) {
+    if (confirm("Are you sure? This removes the player's history.")) {
         state.players.splice(i, 1);
         state.rounds.forEach(r => r.splice(i, 1));
-        renderAll();
+        render();
     }
 }
 
@@ -132,30 +127,25 @@ function updatePlayerName(i, val) {
 }
 
 function updateHighlights() {
-    document.querySelectorAll('th').forEach(th => th.className = '');
-    
-    // Find last round with any scores
-    let lastActiveIdx = -1;
-    for(let i = state.rounds.length -1; i >= 0; i--) {
-        if(state.rounds[i].some(c => c.score !== 0)) {
-            lastActiveIdx = i;
-            break;
+    namesRow.querySelectorAll('th').forEach(th => th.className = '');
+    let activeRIdx = -1;
+    for (let i = state.rounds.length - 1; i >= 0; i--) {
+        if (state.rounds[i].some(c => c.score !== 0)) {
+            activeRIdx = i; break;
         }
     }
+    if (activeRIdx === -1) return;
 
-    if (lastActiveIdx === -1) return;
+    const currentScores = state.rounds[activeRIdx].map(c => c.score);
+    const max = Math.max(...currentScores);
+    const min = Math.min(...currentScores);
 
-    const scores = state.rounds[lastActiveIdx].map(c => c.score);
-    const min = Math.min(...scores);
-    const max = Math.max(...scores);
-
-    state.players.forEach((_, i) => {
-        if (scores[i] === max && max !== min) namesRow.cells[i].classList.add('high-score');
-        if (scores[i] === min && max !== min) namesRow.cells[i].classList.add('low-score');
+    if (max === min) return;
+    currentScores.forEach((s, i) => {
+        if (s === max) namesRow.cells[i].classList.add('high-score');
+        if (s === min) namesRow.cells[i].classList.add('low-score');
     });
 }
-
-// --- Persistence ---
 
 function save() {
     localStorage.setItem('eightCardsState', JSON.stringify(state));
@@ -163,28 +153,24 @@ function save() {
 
 document.getElementById('shareBtn').onclick = () => {
     const data = btoa(JSON.stringify(state));
-    const url = window.location.origin + window.location.pathname + "?data=" + data;
-    navigator.clipboard.writeText(url);
-    alert("Shareable URL copied to clipboard!");
+    const url = `${window.location.origin}${window.location.pathname}?data=${data}`;
+    navigator.clipboard.writeText(url).then(() => alert("URL Copied!"));
 };
 
 document.getElementById('addPlayerBtn').onclick = () => {
     if (state.players.length < 6) {
-        state.players.push("New Player");
-        state.rounds.forEach(r => r.push({ bet: 0, score: 0 }));
-        renderAll();
+        state.players.push(`P${state.players.length + 1}`);
+        state.rounds.forEach(r => r.push({ bet: null, score: 0 }));
+        render();
     }
 };
 
-document.getElementById('addRowBtn').onclick = () => {
-    createNewRoundData();
-    renderAll();
-};
+document.getElementById('addRowBtn').onclick = () => addNewRoundData(true);
 
 document.getElementById('resetBtn').onclick = () => {
-    if (confirm("Reset new game?")) {
+    if (confirm("New game? All current data will be erased.")) {
         localStorage.removeItem('eightCardsState');
-        location.href = window.location.pathname; // Clear URL params too
+        window.location.href = window.location.pathname;
     }
 };
 

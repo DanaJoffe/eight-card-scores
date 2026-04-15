@@ -3,34 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>8-Cards Board</title>
+    <title>8-Cards Scoreboard</title>
     <link rel="stylesheet" href="style.css">
     <link rel="manifest" href="manifest.json">
 </head>
 <body>
     <div class="app-container">
         <header>
-            <div class="top-bar">
-                <button id="resetBtn" class="btn-text">New Game</button>
-                <button id="shareBtn" class="btn-primary">Share Scoreboard</button>
+            <div class="top-nav">
+                <button id="resetBtn" class="secondary-btn">New Game</button>
+                <button id="shareBtn" class="primary-btn">Share</button>
             </div>
-            <div class="player-controls">
-                <button id="addPlayerBtn">+ Player</button>
+            <div class="player-nav">
+                <button id="addPlayerBtn">+ Add Player</button>
             </div>
         </header>
 
-        <div class="table-scroll-container">
+        <main class="table-area">
             <table id="scoreTable">
                 <thead>
                     <tr id="playerNamesRow"></tr>
                 </thead>
                 <tbody id="roundsBody"></tbody>
             </table>
-        </div>
-
-        <div class="footer">
-            <button id="addRowBtn" class="add-row-btn">+</button>
-        </div>
+            <div class="row-trigger-zone">
+                <button id="addRowBtn" class="fab-btn">+</button>
+            </div>
+        </main>
     </div>
     <script src="script.js"></script>
 </body>
