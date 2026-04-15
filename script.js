@@ -97,30 +97,42 @@ function renderTable() {
 }
 
 function updateHighlights() {
-    // Reset classes on headers
-    namesRow.querySelectorAll('th').forEach(th => th.classList.remove('high-score', 'low-score'));
+    // 1. Reset all header colors first
+    const headers = namesRow.querySelectorAll('th');
+    headers.forEach(th => {
+        th.style.backgroundColor = ""; // Clear inline styles
+        th.classList.remove('high-score', 'low-score');
+    });
     
-    // Find last round where at least one score has been set
+    // 2. Find the latest round that has any score data
     let activeRIdx = -1;
     for (let i = state.rounds.length - 1; i >= 0; i--) {
-        if (state.rounds[i].some(c => c.score !== 0)) {
+        // We check if any score in this round is non-zero (or has been set)
+        const hasData = state.rounds[i].some(c => c.score !== 0);
+        if (hasData) {
             activeRIdx = i; 
             break;
         }
     }
     
+    // If no scores have been entered yet, stop here
     if (activeRIdx === -1) return;
 
+    // 3. Extract the scores from that specific round
     const currentScores = state.rounds[activeRIdx].map(c => c.score);
     const max = Math.max(...currentScores);
     const min = Math.min(...currentScores);
 
-    // Only highlight if there is a difference between players
+    // 4. If everyone has the same score (e.g., beginning of game), don't highlight
     if (max === min) return;
 
+    // 5. Apply the classes to the header cells
     currentScores.forEach((s, i) => {
-        if (s === max) namesRow.cells[i].classList.add('high-score');
-        if (s === min) namesRow.cells[i].classList.add('low-score');
+        if (s === max) {
+            namesRow.cells[i].classList.add('high-score');
+        } else if (s === min) {
+            namesRow.cells[i].classList.add('low-score');
+        }
     });
 }
 
