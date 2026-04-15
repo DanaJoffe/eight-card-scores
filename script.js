@@ -65,21 +65,33 @@ function renderTable() {
             const scoreDisabled = cell.bet === null ? 'disabled' : '';
             const isFirst = pIdx === firstBetterIndex ? 'first-better' : '';
 
-            // --- Dynamic Scoring Logic ---
-            let scoreOptionsHtml = `<option value="">${cell.score}</option>`;
-            
-            if (cell.bet !== null) {
-                // "In" Option: bet * 4 + 3
-                const winVal = (cell.bet * 4) + 3;
-                scoreOptionsHtml += `<option class="opt-win" value="${prevScore + winVal}">+${winVal} (IN)</option>`;
-                
-                // "Out" Options: max(bet, 8-bet) * steps of 2
-                const maxOutSteps = Math.max(cell.bet, 8 - cell.bet);
-                for (let step = 1; step <= maxOutSteps; step++) {
-                    const penalty = step * 2;
-                    scoreOptionsHtml += `<option class="opt-loss" value="${prevScore - penalty}">-${penalty} (OUT)</option>`;
-                }
-            }
+			// --- Dynamic Scoring Logic with "More" toggle ---
+			let scoreOptionsHtml = `<option value="">${cell.score}</option>`;
+
+			if (cell.bet !== null) {
+				const winVal = (cell.bet * 4) + 3;
+				const maxOutSteps = Math.max(cell.bet, 8 - cell.bet);
+				
+				// Check if the user has already requested "more" for this specific cell
+				// We can store this in a temporary session variable or check a 'data' attribute
+				const showAll = cell.showFullMenu === true;
+
+				// "In" Option
+				scoreOptionsHtml += `<option class="opt-win" value="${prevScore + winVal}">+${winVal} (IN)</option>`;
+
+				// "Out" Options
+				const limit = showAll ? maxOutSteps : Math.min(2, maxOutSteps);
+				
+				for (let step = 1; step <= limit; step++) {
+					const penalty = step * 2;
+					scoreOptionsHtml += `<option class="opt-loss" value="${prevScore - penalty}">-${penalty} (OUT)</option>`;
+				}
+
+				// Add "More" option if we are currently limiting and there's more to show
+				if (!showAll && maxOutSteps > 2) {
+					scoreOptionsHtml += `<option value="toggle-more">More...</option>`;
+				}
+			}
 
             td.innerHTML = `
                 <div class="cell-box ${isFirst}">
@@ -130,7 +142,21 @@ function updateBet(rIdx, pIdx, val) {
 
 function updateScore(rIdx, pIdx, val) {
     if (val === "") return;
+
+    if (val === "toggle-more") {
+        // Set a temporary flag for this specific cell
+        state.rounds[rIdx][pIdx].showFullMenu = true;
+        render(); // Re-render the table to show the full list
+        
+        // Optional: on some Androids you can try to focus the element to open it again
+        // document.querySelector(`#score-select-${rIdx}-${pIdx}`).focus(); 
+        return;
+    }
+
+    // Normal score update
     state.rounds[rIdx][pIdx].score = parseInt(val);
+    // Reset the "more" flag so it collapses for next time if desired
+    delete state.rounds[rIdx][pIdx].showFullMenu; 
     render();
 }
 
