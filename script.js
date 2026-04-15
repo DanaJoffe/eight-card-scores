@@ -32,7 +32,7 @@ function addNewRoundData(shouldRender = true) {
 function render() {
     renderHeaders();
     renderTable();
-    updateHighlights(); // Restored logic
+    updateHighlights();
     save();
 }
 
@@ -59,12 +59,27 @@ function renderTable() {
         round.forEach((cell, pIdx) => {
             const td = document.createElement('td');
             const prevScore = rIdx > 0 ? state.rounds[rIdx-1][pIdx].score : 0;
-            const winVal = (cell.bet * 4) + 3;
-
+            
             const canBet = (rIdx === 0) || (state.rounds[rIdx-1][pIdx].score !== null);
             const betDisabled = !canBet ? 'disabled' : '';
             const scoreDisabled = cell.bet === null ? 'disabled' : '';
             const isFirst = pIdx === firstBetterIndex ? 'first-better' : '';
+
+            // --- Dynamic Scoring Logic ---
+            let scoreOptionsHtml = `<option value="">${cell.score}</option>`;
+            
+            if (cell.bet !== null) {
+                // "In" Option: bet * 4 + 3
+                const winVal = (cell.bet * 4) + 3;
+                scoreOptionsHtml += `<option class="opt-win" value="${prevScore + winVal}">+${winVal} (IN)</option>`;
+                
+                // "Out" Options: max(bet, 8-bet) * steps of 2
+                const maxOutSteps = Math.max(cell.bet, 8 - cell.bet);
+                for (let step = 1; step <= maxOutSteps; step++) {
+                    const penalty = step * 2;
+                    scoreOptionsHtml += `<option class="opt-loss" value="${prevScore - penalty}">-${penalty} (OUT)</option>`;
+                }
+            }
 
             td.innerHTML = `
                 <div class="cell-box ${isFirst}">
@@ -78,14 +93,7 @@ function renderTable() {
                     </div>
                     <div class="score-part">
                         <select ${scoreDisabled} onchange="updateScore(${rIdx}, ${pIdx}, this.value)">
-                            <option value="">${cell.score}</option>
-                            <option class="opt-win" value="${prevScore + winVal}">+${winVal}</option>
-                            <option class="opt-loss" value="${prevScore - 2}">-2</option>
-                            <option class="opt-loss" value="${prevScore - 4}">-4</option>
-                            <option class="opt-loss" value="${prevScore - 6}">-6</option>
-                            <option class="opt-loss" value="${prevScore - 8}">-8</option>
-                            <option class="opt-loss" value="${prevScore - 10}">-10</option>
-                            <option class="opt-loss" value="${prevScore - 12}">-12</option>
+                            ${scoreOptionsHtml}
                         </select>
                     </div>
                 </div>
@@ -93,46 +101,6 @@ function renderTable() {
             tr.appendChild(td);
         });
         roundsBody.appendChild(tr);
-    });
-}
-
-function updateHighlights() {
-    // 1. Reset all header colors first
-    const headers = namesRow.querySelectorAll('th');
-    headers.forEach(th => {
-        th.style.backgroundColor = ""; // Clear inline styles
-        th.classList.remove('high-score', 'low-score');
-    });
-    
-    // 2. Find the latest round that has any score data
-    let activeRIdx = -1;
-    for (let i = state.rounds.length - 1; i >= 0; i--) {
-        // We check if any score in this round is non-zero (or has been set)
-        const hasData = state.rounds[i].some(c => c.score !== 0);
-        if (hasData) {
-            activeRIdx = i; 
-            break;
-        }
-    }
-    
-    // If no scores have been entered yet, stop here
-    if (activeRIdx === -1) return;
-
-    // 3. Extract the scores from that specific round
-    const currentScores = state.rounds[activeRIdx].map(c => c.score);
-    const max = Math.max(...currentScores);
-    const min = Math.min(...currentScores);
-
-    // 4. If everyone has the same score (e.g., beginning of game), don't highlight
-    if (max === min) return;
-
-    // 5. Apply the classes to the header cells
-    currentScores.forEach((s, i) => {
-        if (s === max) {
-            namesRow.cells[i].classList.add('high-score');
-        } else if (s === min) {
-            namesRow.cells[i].classList.add('low-score');
-        }
     });
 }
 
@@ -177,6 +145,25 @@ function removePlayer(i) {
 function updatePlayerName(i, val) {
     state.players[i] = val;
     save();
+}
+
+function updateHighlights() {
+    namesRow.querySelectorAll('th').forEach(th => th.classList.remove('high-score', 'low-score'));
+    let activeRIdx = -1;
+    for (let i = state.rounds.length - 1; i >= 0; i--) {
+        if (state.rounds[i].some(c => c.score !== 0)) {
+            activeRIdx = i; break;
+        }
+    }
+    if (activeRIdx === -1) return;
+    const currentScores = state.rounds[activeRIdx].map(c => c.score);
+    const max = Math.max(...currentScores);
+    const min = Math.min(...currentScores);
+    if (max === min) return;
+    currentScores.forEach((s, i) => {
+        if (s === max) namesRow.cells[i].classList.add('high-score');
+        if (s === min) namesRow.cells[i].classList.add('low-score');
+    });
 }
 
 function save() {

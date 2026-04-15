@@ -1,43 +1,33 @@
-/* Eight Cards Scoreboard - Complete Stylesheet */
-
 :root {
     --bg: #f4f7f6;
     --dark: #2d3436;
     --win: #27ae60;
     --loss: #d63031;
     --border: #dfe6e9;
-    --accent: #3498db;      /* Turn Indicator Blue */
-    --soft-green: #c3e6cb;  /* Winner Background */
-    --soft-red: #f5c6cb;    /* Loser Background */
-}
-
-* {
-    box-sizing: border-box;
+    --accent: #3498db; 
+    --soft-green: #c3e6cb;
+    --soft-red: #f5c6cb;
 }
 
 body {
-    font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    margin: 0;
-    padding: 0;
+    font-family: -apple-system, system-ui, sans-serif;
+    margin: 0; padding: 0;
     background: var(--bg);
     color: var(--dark);
     height: 100vh;
-    overflow: hidden; /* Prevents whole-page bouncing on mobile */
+    overflow: hidden;
 }
 
-/* App Layout Container */
 .app-container {
     display: flex;
     flex-direction: column;
     height: 100vh;
 }
 
-/* Top Navigation Bar */
 header {
     background: var(--dark);
     padding: 10px;
     box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-    z-index: 20;
 }
 
 .top-nav {
@@ -46,185 +36,103 @@ header {
     margin-bottom: 8px;
 }
 
-.player-nav {
-    display: flex;
-    justify-content: center;
-}
-
-/* Table Management Area */
 .table-area {
     flex: 1;
     overflow-y: auto;
-    overflow-x: hidden; /* Forces "Squeeze" mode for columns */
+    overflow-x: hidden;
     position: relative;
-    padding-bottom: 100px; /* Space for the Floating Action Button */
+    padding-bottom: 80px;
 }
 
 table {
     width: 100%;
     border-collapse: collapse;
-    table-layout: fixed; /* Ensures all columns stay proportional regardless of content */
-    background: white;
+    table-layout: fixed;
 }
 
-/* Sticky Headers with Highlights */
 thead th {
     position: sticky;
     top: 0;
-    background: #f8f9fa; /* Default header color */
+    background: #f8f9fa;
     z-index: 10;
     border: 1px solid var(--border);
-    padding: 8px 4px;
+    padding: 5px;
     font-size: 0.8rem;
-    transition: background-color 0.3s ease;
 }
 
-/* Winner/Loser Highlight Logic - Overrides sticky background */
-thead th.high-score { 
-    background-color: var(--soft-green) !important; 
-    color: #155724 !important;
-}
-
-thead th.low-score { 
-    background-color: var(--soft-red) !important; 
-    color: #721c24 !important;
-}
-
-.player-header {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-}
+.high-score { background-color: var(--soft-green) !important; color: #155724 !important; }
+.low-score { background-color: var(--soft-red) !important; color: #721c24 !important; }
 
 .player-name-input {
-    width: 100%;
+    width: 90%;
     border: none;
     background: transparent;
     text-align: center;
     font-weight: bold;
     font-size: 0.85rem;
-    color: inherit; /* Matches parent TH text color */
+    color: inherit;
 }
 
 .remove-p {
-    border: none;
-    background: none;
-    color: var(--loss);
-    font-size: 16px;
-    cursor: pointer;
-    padding: 0;
+    border: none; background: none; color: var(--loss); font-size: 14px;
 }
 
-/* Round Row Cells */
 .cell-box {
     display: flex;
-    height: 48px;
+    height: 50px;
     border-bottom: 1px solid var(--border);
-    border-left: 4px solid transparent; /* Placeholder for turn indicator */
+    border-left: 4px solid transparent; 
 }
 
-/* Visual Indicator for First Better */
-.cell-box.first-better {
+.first-better {
     background: #ebf5fb; 
     border-left: 4px solid var(--accent) !important;
 }
 
-/* 1/3 Bet and 2/3 Score Split */
 .bet-part {
-    width: 33.33%;
+    width: 30%;
     border-right: 1px solid var(--border);
 }
 
 .score-part {
-    width: 66.66%;
+    width: 70%;
 }
 
-/* Form Elements */
 select {
     width: 100%;
     height: 100%;
     border: none;
     background: transparent;
-    font-size: 0.95rem;
+    font-size: 0.85rem;
     text-align: center;
-    -webkit-appearance: none; /* Removes default arrow on some mobile browsers */
-    appearance: none;
-    color: var(--dark);
 }
 
-select:disabled {
-    color: #bdc3c7;
-    background: #fdfdfd;
-}
+select:disabled { color: #ccc; }
 
-/* Color coding for scores inside dropdown */
-.opt-win {
-    color: var(--win);
-    font-weight: bold;
-}
+.opt-win { color: var(--win); font-weight: bold; }
+.opt-loss { color: var(--loss); }
 
-.opt-loss {
-    color: var(--loss);
-}
-
-/* UI Components */
-.primary-btn {
-    background: var(--accent);
-    border: none;
-    color: white;
-    padding: 6px 14px;
-    border-radius: 4px;
-    font-weight: bold;
-    font-size: 0.8rem;
-}
-
-.secondary-btn {
-    background: #636e72;
-    border: none;
-    color: white;
-    padding: 6px 14px;
-    border-radius: 4px;
-    font-size: 0.8rem;
-}
-
-#addPlayerBtn {
-    background: transparent;
-    border: 1px dashed #ffffff88;
-    color: white;
-    padding: 4px 10px;
-    border-radius: 4px;
-    font-size: 0.75rem;
-}
-
-/* Floating Action Button (+) */
 .row-trigger-zone {
     position: sticky;
-    bottom: 25px;
+    bottom: 20px;
     left: 0;
     width: 100%;
     display: flex;
     justify-content: center;
-    pointer-events: none; /* Allows scrolling through the zone */
+    pointer-events: none;
 }
 
 .fab-btn {
-    pointer-events: auto; /* Re-enables clicking for the button only */
-    width: 60px;
-    height: 60px;
-    border-radius: 30px;
+    pointer-events: auto;
+    width: 56px;
+    height: 56px;
+    border-radius: 28px;
     background: var(--dark);
     color: white;
-    font-size: 32px;
+    font-size: 28px;
     border: none;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
 }
 
-.fab-btn:active {
-    transform: scale(0.95);
-    background: #000;
-}
+.primary-btn { background: var(--accent); border: none; color: white; padding: 5px 15px; border-radius: 4px; }
+.secondary-btn { background: #636e72; border: none; color: white; padding: 5px 15px; border-radius: 4px; }
