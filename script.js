@@ -17,7 +17,6 @@ function init() {
         if (saved) state = JSON.parse(saved);
     }
 
-    // Default 5 rounds if totally new
     if (state.rounds.length === 0) {
         for(let i=0; i<5; i++) addNewRoundData(false);
     }
@@ -25,7 +24,7 @@ function init() {
 }
 
 function addNewRoundData(shouldRender = true) {
-    const newRound = state.players.map(() => ({ bet: null, score: 0, hasBet: false }));
+    const newRound = state.players.map(() => ({ bet: null, score: 0 }));
     state.rounds.push(newRound);
     if (shouldRender) render();
 }
@@ -60,13 +59,18 @@ function renderTable() {
             const prevScore = rIdx > 0 ? state.rounds[rIdx-1][pIdx].score : 0;
             const winVal = (cell.bet * 4) + 3;
 
-            // Conditional Logic: Only allow score if bet is placed
+            // --- Logic: Can only bet if player has score from previous round ---
+            // (Always allowed in Round 0)
+            const canBet = (rIdx === 0) || (state.rounds[rIdx-1][pIdx].score !== null);
+            const betDisabled = !canBet ? 'disabled' : '';
+
+            // --- Logic: Only allow score if bet is placed ---
             const scoreDisabled = cell.bet === null ? 'disabled' : '';
 
             td.innerHTML = `
                 <div class="cell-box">
                     <div class="bet-part">
-                        <select onchange="updateBet(${rIdx}, ${pIdx}, this.value)">
+                        <select ${betDisabled} onchange="updateBet(${rIdx}, ${pIdx}, this.value)">
                             <option value="" ${cell.bet === null ? 'selected' : ''}>-</option>
                             ${[0,1,2,3,4,5,6,7,8].map(v => 
                                 `<option value="${v}" ${v === cell.bet ? 'selected' : ''}>${v}</option>`
@@ -94,16 +98,33 @@ function renderTable() {
 }
 
 function updateBet(rIdx, pIdx, val) {
-    if (val === "") return;
-    const num = parseInt(val);
-    state.rounds[rIdx][pIdx].bet = num;
-
-    // Rule: Sum cannot be 8
-    const sum = state.rounds[rIdx].reduce((acc, c) => acc + (c.bet || 0), 0);
-    if (sum === 8) {
-        alert("Rule Broken: Sum of bets across players cannot be 8.");
+    if (val === "") {
         state.rounds[rIdx][pIdx].bet = null;
+        render();
+        return;
     }
+
+    const num = parseInt(val);
+    const roundData = state.rounds[rIdx];
+    
+    // Temporarily set the bet to check the rule
+    const oldBet = roundData[pIdx].bet;
+    roundData[pIdx].bet = num;
+
+    // --- Logic: Sum cannot be 8 only if this is the LAST player to bet in this round ---
+    const playersWhoHaveBet = roundData.filter(p => p.bet !== null).length;
+    const isLastPlayer = playersWhoHaveBet === state.players.length;
+
+    if (isLastPlayer) {
+        const sum = roundData.reduce((acc, c) => acc + c.bet, 0);
+        if (sum === 8) {
+            alert("Guardrail: The last player's bet cannot result in a total sum of 8!");
+            roundData[pIdx].bet = oldBet; // Revert
+            render();
+            return;
+        }
+    }
+
     render();
 }
 
