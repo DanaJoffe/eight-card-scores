@@ -12,10 +12,12 @@
         <header>
             <div class="top-nav">
                 <button id="resetBtn" class="secondary-btn">New Game</button>
+                <div class="sum-badge">Bet Sum: <span id="betSum">0</span></div>
                 <button id="shareBtn" class="primary-btn">Share</button>
             </div>
             <div class="player-nav">
                 <button id="addPlayerBtn">+ Add Player</button>
+                <div class="edit-hint">Long-tap past rounds to edit</div>
             </div>
         </header>
 
@@ -26,9 +28,6 @@
                 </thead>
                 <tbody id="roundsBody"></tbody>
             </table>
-            <div class="row-trigger-zone">
-                <button id="addRowBtn" class="fab-btn">+</button>
-            </div>
         </main>
     </div>
     <script src="script.js"></script>
