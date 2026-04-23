@@ -64,6 +64,18 @@ let state = {
 };
 ```
 
+### Persistence
+
+* **LocalStorage**: Save the state object to ```eightCardsState``` on every change.
+* **Initialization**: On load, check URL parameters first, then LocalStorage, then default to a 4-player/1-round setup.
+
+
+### File Structure
+
+* ```index.html```: Main structure and interactivity buttons.
+* ```style.css```: Mobile-first CSS including long-press animations and orientation rules.
+* ```script.js```: Core logic for turns, sum-of-8 guardrails, and auto-row generation.
+* ```manifest.json```: PWA configuration for "Add to Home Screen" support.
 
 ## 5. Future Improvments
 
