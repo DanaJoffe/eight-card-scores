@@ -158,14 +158,45 @@ function updateBet(rIdx, pIdx, val) {
             round[pIdx].bet = old;
         }
     }
+
+    // If the bet actually changed (and wasn't reverted) and this cell already
+    // has a score, the score no longer matches the new bet's IN/OUT options.
+    // Clear it and unwind its delta from all later rounds for this player.
+    if (round[pIdx].bet !== old && round[pIdx].score !== null) {
+        const prevScore = rIdx > 0 ? (state.rounds[rIdx-1][pIdx].score || 0) : 0;
+        const delta = round[pIdx].score - prevScore;
+        round[pIdx].score = null;
+        round[pIdx].status = null;
+        for (let i = rIdx + 1; i < state.rounds.length; i++) {
+            if (state.rounds[i][pIdx].score !== null) {
+                state.rounds[i][pIdx].score -= delta;
+            }
+        }
+    }
+
     render();
 }
 
 function updateScore(rIdx, pIdx, val) {
     if (val === "") return;
     const [score, status] = val.split('|');
-    state.rounds[rIdx][pIdx].score = parseInt(score);
+    const newScore = parseInt(score);
+    const oldScore = state.rounds[rIdx][pIdx].score;
+
+    state.rounds[rIdx][pIdx].score = newScore;
     state.rounds[rIdx][pIdx].status = status;
+
+    // Stored scores are cumulative totals, so editing a past round must shift
+    // every later (already-scored) round for this player by the same delta.
+    if (oldScore !== null && newScore !== oldScore) {
+        const delta = newScore - oldScore;
+        for (let i = rIdx + 1; i < state.rounds.length; i++) {
+            if (state.rounds[i][pIdx].score !== null) {
+                state.rounds[i][pIdx].score += delta;
+            }
+        }
+    }
+
     unlockedRoundIdx = null; // Re-lock if it was an edit
 
     // Automatically add round if current is finished
