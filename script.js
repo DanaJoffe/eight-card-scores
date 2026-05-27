@@ -230,12 +230,27 @@ function openPicker(rIdx, pIdx, type, anchorEl) {
     let html = '';
 
     if (type === 'bet') {
+        // Sum-of-8 rule: if every OTHER player in this round already has a bet,
+        // this player cannot pick the value that would make the round total
+        // exactly 8. Mark it disabled (and visually flagged) in the picker.
+        const round = state.rounds[rIdx];
+        const otherBets = round.filter((_, i) => i !== pIdx).map(p => p.bet);
+        const allOthersBet = otherBets.every(b => b !== null);
+        const sumOthers = otherBets.reduce((a, b) => a + (b || 0), 0);
+        const forbidden = allOthersBet ? (8 - sumOthers) : null;
+
+        const renderBetBtn = (v) => {
+            const isForbidden = v === forbidden;
+            const attrs = isForbidden
+                ? `class="forbidden" disabled title="Sum of bets would be 8"`
+                : `onclick="pickBet(${rIdx},${pIdx},${v})"`;
+            return `<button ${attrs}>${v}</button>`;
+        };
+
         const commonBets = [0, 1, 2, 3];
         const rareBets = [4, 5, 6, 7, 8];
-        html += `<div class="popover-row common">${commonBets.map(v =>
-            `<button onclick="pickBet(${rIdx},${pIdx},${v})">${v}</button>`).join('')}</div>`;
-        html += `<div class="popover-row rare">${rareBets.map(v =>
-            `<button onclick="pickBet(${rIdx},${pIdx},${v})">${v}</button>`).join('')}
+        html += `<div class="popover-row common">${commonBets.map(renderBetBtn).join('')}</div>`;
+        html += `<div class="popover-row rare">${rareBets.map(renderBetBtn).join('')}
             <button onclick="pickBet(${rIdx},${pIdx},null)">Clear</button></div>`;
     } else {
         if (cell.bet === null) return;
