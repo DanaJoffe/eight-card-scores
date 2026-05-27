@@ -14,7 +14,9 @@ body {
     font-family: -apple-system, system-ui, sans-serif;
     margin: 0; padding: 0;
     background: var(--bg);
-    height: 100vh;
+    /* dvh excludes the mobile browser's dynamic chrome (URL bar). Using vh here
+       makes the app taller than the visible viewport on mobile, hiding the header. */
+    height: 100dvh;
     overflow: hidden;
     user-select: none;
     -webkit-user-select: none;
@@ -30,7 +32,7 @@ body {
     header .player-nav { display: none; }
 }
 
-.app-container { display: flex; flex-direction: column; height: 100vh; }
+.app-container { display: flex; flex-direction: column; height: 100dvh; }
 
 header { background: var(--dark); padding: 10px; color: white; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
 .top-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
