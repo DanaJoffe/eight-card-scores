@@ -6,6 +6,7 @@ let state = {
 let unlockedRoundIdx = null;
 let longPressTimer;
 let lastRenderedCurIdx = -1;
+let openPopover = null; // {rIdx, pIdx, type: 'bet'|'score'} or null
 
 function init() {
     const urlParams = new URLSearchParams(window.location.search);
@@ -99,31 +100,18 @@ function renderTable(curIdx) {
             const betDisabled = !editable ? 'disabled' : '';
             const scoreDisabled = (cell.bet === null || !editable) ? 'disabled' : '';
 
-            // Default display is empty if score is null
-            let scoreOpts = `<option value="">${cell.score === null ? '' : cell.score}</option>`;
-            
-            if (editable && cell.bet !== null) {
-                const win = (cell.bet * 4) + 3;
-                scoreOpts += `<option value="${prevScore + win}|in">+${win} (IN)</option>`;
-                const maxOut = Math.max(cell.bet, 8 - cell.bet);
-                for (let i = 1; i <= maxOut; i++) {
-                    const loss = i * 2;
-                    scoreOpts += `<option value="${prevScore - loss}|out">-${loss} (OUT)</option>`;
-                }
-            }
+            const betLabel = cell.bet === null ? '-' : cell.bet;
+            const scoreLabel = cell.score === null ? '' : cell.score;
 
             td.innerHTML = `
                 <div class="cell-box ${isFirst} ${statusClass}">
                     <div class="bet-part">
-                        <select ${betDisabled} onchange="updateBet(${rIdx}, ${pIdx}, this.value)">
-                            <option value="">-</option>
-                            ${[0,1,2,3,4,5,6,7,8].map(v => `<option value="${v}" ${v==cell.bet?'selected':''}>${v}</option>`).join('')}
-                        </select>
+                        <button class="cell-button" ${betDisabled}
+                            onclick="event.stopPropagation(); openPicker(${rIdx}, ${pIdx}, 'bet', this)">${betLabel}</button>
                     </div>
                     <div class="score-part">
-                        <select ${scoreDisabled} onchange="updateScore(${rIdx}, ${pIdx}, this.value)">
-                            ${scoreOpts}
-                        </select>
+                        <button class="cell-button" ${scoreDisabled}
+                            onclick="event.stopPropagation(); openPicker(${rIdx}, ${pIdx}, 'score', this)">${scoreLabel}</button>
                     </div>
                 </div>
             `;
@@ -229,6 +217,93 @@ function updateHighlights() {
         }
     }
 }
+
+function openPicker(rIdx, pIdx, type, anchorEl) {
+    // Toggle off if the same picker is already open.
+    if (openPopover && openPopover.rIdx === rIdx && openPopover.pIdx === pIdx && openPopover.type === type) {
+        closePicker();
+        return;
+    }
+
+    const cell = state.rounds[rIdx][pIdx];
+    const popover = document.getElementById('popover');
+    let html = '';
+
+    if (type === 'bet') {
+        const commonBets = [0, 1, 2, 3];
+        const rareBets = [4, 5, 6, 7, 8];
+        html += `<div class="popover-row common">${commonBets.map(v =>
+            `<button onclick="pickBet(${rIdx},${pIdx},${v})">${v}</button>`).join('')}</div>`;
+        html += `<div class="popover-row rare">${rareBets.map(v =>
+            `<button onclick="pickBet(${rIdx},${pIdx},${v})">${v}</button>`).join('')}
+            <button onclick="pickBet(${rIdx},${pIdx},null)">Clear</button></div>`;
+    } else {
+        if (cell.bet === null) return;
+        const prevScore = rIdx > 0 ? (state.rounds[rIdx-1][pIdx].score || 0) : 0;
+        const win = (cell.bet * 4) + 3;
+        const maxOut = Math.max(cell.bet, 8 - cell.bet);
+
+        const commonBtns = [`<button class="in" onclick="pickScore(${rIdx},${pIdx},${prevScore + win},'in')">+${win} IN</button>`];
+        for (let i = 1; i <= Math.min(2, maxOut); i++) {
+            const loss = i * 2;
+            commonBtns.push(`<button class="out" onclick="pickScore(${rIdx},${pIdx},${prevScore - loss},'out')">-${loss}</button>`);
+        }
+        html += `<div class="popover-row common">${commonBtns.join('')}</div>`;
+
+        if (maxOut > 2) {
+            const rareBtns = [];
+            for (let i = 3; i <= maxOut; i++) {
+                const loss = i * 2;
+                rareBtns.push(`<button onclick="pickScore(${rIdx},${pIdx},${prevScore - loss},'out')">-${loss}</button>`);
+            }
+            html += `<div class="popover-row rare">${rareBtns.join('')}</div>`;
+        }
+    }
+
+    popover.innerHTML = html;
+    popover.hidden = false;
+    openPopover = {rIdx, pIdx, type};
+
+    // Position below the anchor; flip above if it would overflow the viewport.
+    const r = anchorEl.getBoundingClientRect();
+    popover.style.top = `${r.bottom + 4}px`;
+    popover.style.left = `${r.left}px`;
+    requestAnimationFrame(() => {
+        const p = popover.getBoundingClientRect();
+        if (p.right > window.innerWidth - 4) {
+            popover.style.left = `${Math.max(4, window.innerWidth - p.width - 4)}px`;
+        }
+        if (p.bottom > window.innerHeight - 4) {
+            popover.style.top = `${Math.max(4, r.top - p.height - 4)}px`;
+        }
+    });
+}
+
+function closePicker() {
+    openPopover = null;
+    const popover = document.getElementById('popover');
+    popover.hidden = true;
+    popover.innerHTML = '';
+}
+
+function pickBet(rIdx, pIdx, value) {
+    closePicker();
+    updateBet(rIdx, pIdx, value === null ? "" : String(value));
+}
+
+function pickScore(rIdx, pIdx, score, status) {
+    closePicker();
+    updateScore(rIdx, pIdx, `${score}|${status}`);
+}
+
+document.addEventListener('click', (e) => {
+    if (!openPopover) return;
+    const popover = document.getElementById('popover');
+    if (popover.contains(e.target)) return;
+    closePicker();
+});
+
+document.querySelector('.table-area').addEventListener('scroll', closePicker, { passive: true });
 
 function save() { localStorage.setItem('eightCardsState', JSON.stringify(state)); }
 function updatePlayerName(i, v) { state.players[i] = v; save(); }
