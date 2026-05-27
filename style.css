@@ -20,9 +20,14 @@ body {
     -webkit-user-select: none;
 }
 
-/* Horizontal Fullscreen Support */
-@media (orientation: landscape) {
-    header { display: none; }
+/* Horizontal Fullscreen Support — only on short screens (phones in landscape),
+   not laptops/desktops which are always landscape but have plenty of height.
+   Keep the Bet Sum visible; hide buttons and hints to maximize table area. */
+@media (orientation: landscape) and (max-height: 500px) {
+    header { padding: 4px 10px; }
+    header .top-nav { margin-bottom: 0; justify-content: center; }
+    header .top-nav button,
+    header .player-nav { display: none; }
 }
 
 .app-container { display: flex; flex-direction: column; height: 100vh; }
@@ -33,7 +38,9 @@ header { background: var(--dark); padding: 10px; color: white; box-shadow: 0 2px
 .sum-badge { font-weight: bold; background: var(--accent); padding: 5px 12px; border-radius: 20px; font-size: 0.9rem; }
 .edit-hint { font-size: 0.7rem; color: #b2bec3; font-style: italic; }
 
-.table-area { flex: 1; overflow-y: auto; position: relative; }
+/* padding-bottom lets the user scroll the last/current row up to the middle
+   of the screen instead of leaving it pinned to the bottom edge. */
+.table-area { flex: 1; overflow-y: auto; position: relative; padding-bottom: 50vh; }
 table { width: 100%; border-collapse: collapse; table-layout: fixed; }
 
 /* Visual separation between player columns */

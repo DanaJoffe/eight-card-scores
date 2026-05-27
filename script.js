@@ -5,6 +5,7 @@ let state = {
 
 let unlockedRoundIdx = null;
 let longPressTimer;
+let lastRenderedCurIdx = -1;
 
 function init() {
     const urlParams = new URLSearchParams(window.location.search);
@@ -42,6 +43,14 @@ function render() {
     updateBetSum(curIdx);
     updateHighlights();
     save();
+
+    // When the current row changes (e.g. a new round was appended), pull it
+    // into the middle of the viewport so the user isn't editing at the bottom edge.
+    if (curIdx !== lastRenderedCurIdx) {
+        const rows = document.getElementById('roundsBody').rows;
+        if (rows[curIdx]) rows[curIdx].scrollIntoView({ block: 'center', behavior: 'smooth' });
+        lastRenderedCurIdx = curIdx;
+    }
 }
 
 function renderHeaders() {
@@ -126,7 +135,7 @@ function renderTable(curIdx) {
 
 function startLongPress(idx) {
     longPressTimer = setTimeout(() => {
-        unlockedRoundIdx = idx;
+        unlockedRoundIdx = (unlockedRoundIdx === idx) ? null : idx;
         render();
     }, 800);
 }
